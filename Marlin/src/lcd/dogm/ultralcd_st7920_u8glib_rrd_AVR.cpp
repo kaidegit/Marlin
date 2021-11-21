@@ -33,64 +33,36 @@
 
 #include "ultralcd_st7920_u8glib_rrd_AVR.h"
 
-// Optimize this code with -O3
-#pragma GCC optimize (3)
-
 #ifndef ST7920_DELAY_1
-  #ifndef LCD_ST7920_DELAY_1
-    #define LCD_ST7920_DELAY_1 0
-  #endif
-  #ifndef BOARD_ST7920_DELAY_1
-    #define BOARD_ST7920_DELAY_1 0
-  #endif
-  #ifndef CPU_ST7920_DELAY_1
-    #define CPU_ST7920_DELAY_1 0
-  #endif
-  #if LCD_ST7920_DELAY_1 || BOARD_ST7920_DELAY_1 || CPU_ST7920_DELAY_1
-    #define ST7920_DELAY_1 DELAY_NS(_MAX(LCD_ST7920_DELAY_1, BOARD_ST7920_DELAY_1, CPU_ST7920_DELAY_1))
+  #ifdef BOARD_ST7920_DELAY_1
+    #define ST7920_DELAY_1 BOARD_ST7920_DELAY_1
   #else
-    #define ST7920_DELAY_1
+    #define ST7920_DELAY_1 CPU_ST7920_DELAY_1
   #endif
 #endif
 #ifndef ST7920_DELAY_2
-  #ifndef LCD_ST7920_DELAY_2
-    #define LCD_ST7920_DELAY_2 0
-  #endif
-  #ifndef BOARD_ST7920_DELAY_2
-    #define BOARD_ST7920_DELAY_2 0
-  #endif
-  #ifndef CPU_ST7920_DELAY_2
-    #define CPU_ST7920_DELAY_2 0
-  #endif
-  #if LCD_ST7920_DELAY_2 || BOARD_ST7920_DELAY_2 || CPU_ST7920_DELAY_2
-    #define ST7920_DELAY_2 DELAY_NS(_MAX(LCD_ST7920_DELAY_2, BOARD_ST7920_DELAY_2, CPU_ST7920_DELAY_2))
+  #ifdef BOARD_ST7920_DELAY_2
+    #define ST7920_DELAY_2 BOARD_ST7920_DELAY_2
   #else
-    #define ST7920_DELAY_2
+    #define ST7920_DELAY_2 CPU_ST7920_DELAY_2
   #endif
 #endif
 #ifndef ST7920_DELAY_3
-  #ifndef LCD_ST7920_DELAY_3
-    #define LCD_ST7920_DELAY_3 0
-  #endif
-  #ifndef BOARD_ST7920_DELAY_3
-    #define BOARD_ST7920_DELAY_3 0
-  #endif
-  #ifndef CPU_ST7920_DELAY_3
-    #define CPU_ST7920_DELAY_3 0
-  #endif
-  #if LCD_ST7920_DELAY_3 || BOARD_ST7920_DELAY_3 || CPU_ST7920_DELAY_3
-    #define ST7920_DELAY_3 DELAY_NS(_MAX(LCD_ST7920_DELAY_3, BOARD_ST7920_DELAY_3, CPU_ST7920_DELAY_3))
+  #ifdef BOARD_ST7920_DELAY_3
+    #define ST7920_DELAY_3 BOARD_ST7920_DELAY_3
   #else
-    #define ST7920_DELAY_3
+    #define ST7920_DELAY_3 CPU_ST7920_DELAY_3
   #endif
 #endif
+
+// Optimize this code with -O3
+#pragma GCC optimize (3)
 
 #ifdef ARDUINO_ARCH_STM32F1
   #define ST7920_DAT(V) !!((V) & 0x80)
 #else
   #define ST7920_DAT(V) ((V) & 0x80)
 #endif
-
 #define ST7920_SND_BIT do{ \
   WRITE(ST7920_CLK_PIN, LOW);             ST7920_DELAY_1; \
   WRITE(ST7920_DAT_PIN, ST7920_DAT(val)); ST7920_DELAY_2; \
@@ -110,33 +82,50 @@ void ST7920_SWSPI_SND_8BIT(uint8_t val) {
   ST7920_SND_BIT; // 7
   ST7920_SND_BIT; // 8
 }
+void lcd_Raddress(uint8_t page,uint8_t column)
+{
+	ST7920_CS();
+	column=column; 
+	page=page;
+	ST7920_SET_CMD();
+	ST7920_WRITE_BYTE(0xb0+page); 
 
+	ST7920_WRITE_BYTE(((column>>4)&0x0f)+0x10); 
+	ST7920_WRITE_BYTE(column&0x0f); 
+	ST7920_NCS();
+}
 uint8_t u8g_dev_rrd_st7920_128x64_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg) {
   uint8_t i, y;
   switch (msg) {
     case U8G_DEV_MSG_INIT: {
-      OUT_WRITE(ST7920_CS_PIN, LOW);
+      OUT_WRITE(ST7920_CS_PIN,LOW);
       OUT_WRITE(ST7920_DAT_PIN, LOW);
       OUT_WRITE(ST7920_CLK_PIN, HIGH);
-
+      OUT_WRITE(PC4, LOW);
+      ST7920_NCS();
+			u8g_Delay(2);  
       ST7920_CS();
-      u8g_Delay(120);                 // Initial delay for boot up
       ST7920_SET_CMD();
-      ST7920_WRITE_BYTE(0x20);        // Non-extended mode
-      ST7920_WRITE_BYTE(0x08);        // Display off, cursor+blink off
-      ST7920_WRITE_BYTE(0x01);        // Clear DDRAM ram
-      u8g_Delay(15);                  // Delay for DDRAM clear
-      ST7920_WRITE_BYTE(0x24);        // Extended mode
-      ST7920_WRITE_BYTE(0x26);        // Extended mode + GDRAM active
-      for (y = 0; y < (LCD_PIXEL_HEIGHT) / 2; y++) {  // Clear GDRAM
-        ST7920_WRITE_BYTE(0x80 | y);  // Set y
-        ST7920_WRITE_BYTE(0x80);      // Set x = 0
-        ST7920_SET_DAT();
-        for (i = 0; i < 2 * (LCD_PIXEL_WIDTH) / 8; i++) // 2x width clears both segments
-          ST7920_WRITE_BYTE(0);
-        ST7920_SET_CMD();
-      }
-      ST7920_WRITE_BYTE(0x0C);        // Display on, cursor+blink off
+      ST7920_WRITE_BYTE(0xe2);       //display off, cursor+blink off
+      u8g_Delay(5);  
+      ST7920_WRITE_BYTE(0x2c);       
+      u8g_Delay(5);    
+      ST7920_WRITE_BYTE(0x2e);       //clear CGRAM ram
+      u8g_Delay(5);   
+      ST7920_WRITE_BYTE(0x2f);       //clear CGRAM ram
+      u8g_Delay(5);  
+      ST7920_WRITE_BYTE(0x23);       //clear CGRAM ram
+      u8g_Delay(5);
+      ST7920_WRITE_BYTE(0x81);
+      u8g_Delay(5);
+      ST7920_WRITE_BYTE(0x28);
+      u8g_Delay(2);
+      ST7920_WRITE_BYTE(0xa2);
+      ST7920_WRITE_BYTE(0xc8);
+      ST7920_WRITE_BYTE(0xa0);
+      ST7920_WRITE_BYTE(0x40);
+      ST7920_WRITE_BYTE(0xaf);    
+     
       ST7920_NCS();
     }
     break;
@@ -144,27 +133,58 @@ uint8_t u8g_dev_rrd_st7920_128x64_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, vo
     case U8G_DEV_MSG_STOP: break;
 
     case U8G_DEV_MSG_PAGE_NEXT: {
-      uint8_t *ptr;
-      u8g_pb_t *pb = (u8g_pb_t*)(dev->dev_mem);
-      y = pb->p.page_y0;
-      ptr = (uint8_t*)pb->buf;
-
-      ST7920_CS();
-      for (i = 0; i < PAGE_HEIGHT; i ++) {
-        ST7920_SET_CMD();
-        if (y < 32) {
-          ST7920_WRITE_BYTE(0x80 | y);        // y
-          ST7920_WRITE_BYTE(0x80);            // x = 0
+      uint8_t testchar,hor,bb,mm,cc;
+        uint8_t *ptr;
+        u8g_pb_t *pb = (u8g_pb_t *)(dev->dev_mem);
+        y = pb->p.page_y0/8;
+        ptr = (uint8_t*)pb->buf;
+        if(y>31){
+        	y=4;
         }
-        else {
-          ST7920_WRITE_BYTE(0x80 | (y - 32)); // y
-          ST7920_WRITE_BYTE(0x80 | 8);        // x = 64
+        for( i = 0; i <4 ; i ++ )
+        {
+          lcd_Raddress(y,0);
+          ST7920_CS();
+          ST7920_SET_DAT();
+          mm=0;
+          for(cc=0;cc<16;cc++){
+            hor=0x80;
+            for(bb=0;bb<8;bb++){
+              testchar=0;
+              if((ptr[0+mm+i*128]&hor)>0){
+                  testchar|=0x1;
+              }
+              if((ptr[16+mm+i*128]&hor)>0){
+                testchar|=0x2;
+              }
+              if((ptr[32+mm+i*128]&hor)>0){
+                testchar|=0x4;
+              }
+              if((ptr[48+mm+i*128]&hor)>0){
+                testchar|=0x8;
+              }
+              if((ptr[64+mm+i*128]&hor)>0){
+                testchar|=0x10;
+              }
+              if((ptr[80+mm+i*128]&hor)>0){
+                testchar|=0x20;
+              }
+              if((ptr[96+mm+i*128]&hor)>0){
+                testchar|=0x40;
+              }
+              if((ptr[112+mm+i*128]&hor)>0){
+                testchar|=0x80;
+              }
+              
+              ST7920_WRITE_BYTE(testchar);
+              hor>>=1;
+            }
+            mm++;
+          }
+          ST7920_NCS();
+          y++;
+          
         }
-        ST7920_SET_DAT();
-        ST7920_WRITE_BYTES(ptr, (LCD_PIXEL_WIDTH) / 8); // ptr incremented inside of macro!
-        y++;
-      }
-      ST7920_NCS();
     }
     break;
   }
