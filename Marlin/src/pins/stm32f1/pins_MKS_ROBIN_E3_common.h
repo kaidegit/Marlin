@@ -217,6 +217,7 @@
     #define TOUCH_INT_PIN           EXP1_05_PIN
 
     #define LCD_USE_DMA_SPI
+    #define TFT_BUFFER_SIZE         8192
   #else
 
     #define LCD_PINS_D4              EXP1_06_PIN
