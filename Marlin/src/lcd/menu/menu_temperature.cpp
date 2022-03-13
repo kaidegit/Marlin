@@ -171,6 +171,9 @@ void menu_temperature() {
   #if HOTENDS == 1
     editable.celsius = thermalManager.temp_hotend[0].target;
     EDIT_ITEM_FAST(int3, MSG_NOZZLE, &editable.celsius, 0, thermalManager.hotend_max_target(0), []{ thermalManager.setTargetHotend(editable.celsius, 0); });
+    // EDIT_ITEM_FAST_N(int3, 0, MSG_NOZZLE, &editable.celsius, 0, thermalManager.hotend_max_target(0), []{ thermalManager.setTargetHotend(editable.celsius, 0); });
+    // editable.celsius = thermalManager.temp_hotend[0].soft_pwm_amount;
+    // EDIT_ITEM_FAST_N(int3, 1, MSG_NOZZLE, &editable.celsius, 0, thermalManager.hotend_max_target(0), []{ thermalManager.setTargetHotend(editable.celsius, 0); });
   #elif HAS_MULTI_HOTEND
     HOTEND_LOOP() {
       editable.celsius = thermalManager.temp_hotend[e].target;
