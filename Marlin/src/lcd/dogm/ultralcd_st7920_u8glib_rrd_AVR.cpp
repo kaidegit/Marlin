@@ -23,6 +23,10 @@
 // NOTE - the HAL version of the rrd device uses a generic ST7920 device.  See
 // the file u8g_dev_st7920_128x64_HAL.cpp for the HAL version.
 
+// NOTE by kai: Feiyu's Screen may be based on UC1701X 
+// link : http://jlxlcd.cn/UpFile/201432214278.pdf?msclkid=a149f8fabccc11ecb430781333831da7 or
+// http://jlxlcd.cn/UpFile/2015922133914.pdf?msclkid=a1481f8cbccc11eca289857bea07ecfa
+
 #include "../../inc/MarlinConfigPre.h"
 
 #if !defined(U8G_HAL_LINKS) && ANY(__AVR__, ARDUINO_ARCH_STM32, ARDUINO_ARCH_ESP32)
@@ -111,15 +115,15 @@ uint8_t u8g_dev_rrd_st7920_128x64_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, vo
             u8g_Delay(2);
             ST7920_CS();
             ST7920_SET_CMD();
-            ST7920_WRITE_BYTE(0xe2);  // display off, cursor+blink off
+            ST7920_WRITE_BYTE(0xe2);  // software reset
             u8g_Delay(5);
             ST7920_WRITE_BYTE(0x2c);
             u8g_Delay(5);
-            ST7920_WRITE_BYTE(0x2e);  // clear CGRAM ram
+            ST7920_WRITE_BYTE(0x2e);  
             u8g_Delay(5);
-            ST7920_WRITE_BYTE(0x2f);  // clear CGRAM ram
+            ST7920_WRITE_BYTE(0x2f);  
             u8g_Delay(5);
-            ST7920_WRITE_BYTE(0x23);  // clear CGRAM ram
+            ST7920_WRITE_BYTE(0x23);  
             u8g_Delay(5);
             ST7920_WRITE_BYTE(0x81);
             u8g_Delay(5);
